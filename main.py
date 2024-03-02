@@ -6,6 +6,7 @@ import sys
 import pathlib
 from datetime import date, datetime
 from stopwatch import Stopwatch
+import warnings
 
 # UI packages
 import rich_preambles
@@ -25,8 +26,11 @@ def main():
     ### Define variables
 
     ### Define the dictionary that defines the dicom tags to change and what the new values should be
-    tags_to_change_dict_1 = {(0x0008,0x103E): 'PELVIS',
-                                   }
+    ## IMPORTANT: For this below dict, make sure these are all tags that are part of the standard dicom library!
+    ## IMPORTANT: Make sure that the new value to be set is of the correct datatype! - Example: SeriesDescription has value representation LO, therefore new value must be string!
+    # Can use either tuple of literal hexidecimals or tag keyword as string - Example: 'SeriesDescription' or  
+    standard_tags_to_change_dict = {(0x0008,0x103E): 'PELVIS',
+                                }
 
     ### Timing vars
     algo_global_start = time.time()
@@ -40,7 +44,7 @@ def main():
 
 
     ### Textual parameters/options
-    spinner_type = 'moon' # other decent ones are 'point' and 'line' or 'line2'
+    spinner_type = 'point' # other decent ones are 'point' and 'line' or 'line2'
 
 
     ### Initialize textual output
@@ -55,16 +59,23 @@ def main():
 
     layout_groups = (app_header,progress_group_info_list,important_info,app_footer)
     
+    warnings.simplefilter('ignore')
             
     with Live(rich_layout, refresh_per_second = 8, screen = True) as live_display:
+        rich_layout["header"].update(app_header)
+        rich_layout["main-left"].update(progress_group)
+        #rich_layout["box2"].update(Panel(make_syntax(), border_style="green"))
+        rich_layout["main-right"].update(important_info)
+        rich_layout["footer"].update(app_footer)
         
         ###### Indeterminate task preliminaries (START)
         task_main_indeterminate = indeterminate_progress_main.add_task('[red]Performing preliminaries...', total=None)
         task_main_indeterminate_completed = completed_progress.add_task('[green]Performing preliminaries...', total=None, visible = False)
         ######
 
+
         ### Create directories if not already present
-        data_dir = pathlib.Path(__file__).joinpath(data_folder_name)
+        data_dir = pathlib.Path(__file__).parents[0].joinpath(data_folder_name)
         input_dir = data_dir.joinpath(input_data_folder_name)
         output_dir = data_dir.joinpath(output_folder_name)
         unused_dir = data_dir.joinpath(unused_folder_name)
@@ -93,7 +104,7 @@ def main():
         ###### Indeterminate task preliminaries (END)
         indeterminate_progress_main.update(task_main_indeterminate, visible = False)
         completed_progress.update(task_main_indeterminate_completed, visible = True)
-        live_display.refresh()
+        #live_display.refresh()
         ######
 
 
@@ -122,8 +133,8 @@ def main():
             ### For loading bar (END)
 
             # Modify the DICOM
-            modified_dicom = dicom_modifer_functions.modify_DicomTag(dicom_path, 
-                    tags_to_change_dict_1, 
+            modified_dicom = dicom_modifer_functions.modify_standard_DicomTag(dicom_path, 
+                    standard_tags_to_change_dict, 
                     important_info, 
                     live_display)
             
@@ -132,6 +143,7 @@ def main():
             
             # Save the DICOM to file
             sp_session_sp_patient_output_dir = session_output_dir.joinpath(str(patient_ID))
+            sp_session_sp_patient_output_dir.mkdir(parents=False, exist_ok=True)
             output_file_path = sp_session_sp_patient_output_dir.joinpath(dicom_filename)
             modified_dicom.save_as(output_file_path)
 
@@ -139,7 +151,7 @@ def main():
 
             # Advance loading bar
             patients_progress.update(processing_patients_task, advance=1)
-            completed_progress.update(processing_patients_task, advance=1)
+            completed_progress.update(processing_patients_task_completed, advance=1)
         
         # Show/hide complete/incomplete loading bars
         patients_progress.update(processing_patients_task, visible=False)

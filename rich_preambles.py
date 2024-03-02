@@ -34,7 +34,7 @@ def get_patients_progress(spinner_type):
         BarColumn(),
         TaskProgressColumn(),
         #TimeRemainingColumn(),
-        TextColumn("[green]Patient:"),
+        TextColumn("[green]Item:"),
         MofNCompleteColumn(),
         TimeElapsedColumn(),
     )
@@ -97,7 +97,8 @@ def get_indeterminate_progress_main(spinner_type):
 def get_completed_indeterminate_progress_main():
     completed_indeterminate_progress_main = Progress(
         TextColumn(':heavy_check_mark:'),
-        *Progress.get_default_columns(),
+        #*Progress.get_default_columns(),
+        TextColumn("[progress.description]{task.description}"),
         TimeElapsedColumn(),
     )
     return completed_indeterminate_progress_main
@@ -173,7 +174,7 @@ class Header:
         grid.add_column(justify="left", ratio=1)
         grid.add_column(justify="right")
         grid.add_row(
-            "Biopsy [bold green]LocaliZer[/bold green] Application",
+            "[bold green]DICOM[/bold green] Parser and Modifier Application",
             datetime.now().ctime().replace(":", "[blink]:[/]"),
         )
         return Panel(grid)
