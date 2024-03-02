@@ -5,6 +5,9 @@ name = "pypi"
 
 [packages]
 pydicom = "*"
+pathlib = "*"
+rich = "*"
+"stopwatch.py" = "*"
 
 [dev-packages]
 
