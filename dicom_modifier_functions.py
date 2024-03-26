@@ -3,6 +3,7 @@ from pydicom.datadict import dictionary_VR
 from pydicom.sequence import Sequence
 from copy import deepcopy
 from pydicom.uid import generate_uid
+from datetime import datetime
 
 
 def modify_standard_DicomTag(specific_dicom, 
@@ -150,7 +151,7 @@ def combine_rtstructs_with_checks(source_path, target_path):
 
 
 
-def combine_multiple_rtstructs_with_full_update(source_paths, target_path):
+def combine_multiple_rtstructs_with_full_update(source_paths, target_path, custom_instance_prefix = "1.2.3.4.5."):
     target_ds = deepcopy(pydicom.dcmread(target_path))
     max_roinumber = get_max_roinumber(target_ds)
     
@@ -191,14 +192,38 @@ def combine_multiple_rtstructs_with_full_update(source_paths, target_path):
                         target_ds.RTROIObservationsSequence = Sequence()
                     target_ds.RTROIObservationsSequence.append(new_observation)
                     break
-
+    
+    
+    ###
+    # Modify meta data tags for uniqueness and identification
+    ###
+                         
     # generate a unique id for the new dicom 
-    target_ds.SOPInstanceUID = generate_uid()
+    target_ds.SOPInstanceUID = generate_uid(prefix=custom_instance_prefix)
+    # generate new series instance UID 
+    target_ds.SeriesInstanceUID = generate_uid(prefix=custom_instance_prefix)
+    
     # include/modify the series description 
-    combined_description = 'Target: '+str(target_path.name) +'. Sources: '+', '.join([str(source.name) for source in source_paths])
+    combined_description = ' --- Target: '+str(target_path.name) +'. Sources: '+', '.join([str(source.name) for source in source_paths])
     if "SeriesDescription" in target_ds:
         target_ds.SeriesDescription += combined_description
     else:
         target_ds.SeriesDescription = combined_description
+
+    # change instance and structure set creation time and date
+    now = datetime.now()
+    target_ds.InstanceCreationDate = now.strftime("%Y%m%d")  # Format: YYYYMMDD
+    target_ds.InstanceCreationTime = now.strftime("%H%M%S.%f")  # Format: HHMMSS.FFFFFF
+    target_ds.StructureSetDate = now.strftime("%Y%m%d")
+    target_ds.StructureSetTime = now.strftime("%H%M%S")
+
+    # Modify the Structure Set Label, Name, and Description
+    target_ds.StructureSetLabel = "New Label"
+    target_ds.StructureSetName = "New Name"
+    target_ds.StructureSetDescription = "New Description"
+
+    # Change implementation class uid and media storage sop instance uid
+    target_ds.file_meta.ImplementationClassUID = generate_uid(prefix=custom_instance_prefix)
+    target_ds.file_meta.MediaStorageSOPInstanceUID = generate_uid(prefix=custom_instance_prefix)
 
     return target_ds
