@@ -2,6 +2,8 @@ import pydicom
 from pydicom.datadict import dictionary_VR
 from pydicom.sequence import Sequence
 from copy import deepcopy
+from pydicom.uid import generate_uid
+
 
 def modify_standard_DicomTag(specific_dicom, 
                     tags_to_change_dict, 
@@ -149,7 +151,7 @@ def combine_rtstructs_with_checks(source_path, target_path):
 
 
 def combine_multiple_rtstructs_with_full_update(source_paths, target_path):
-    target_ds = pydicom.dcmread(target_path)
+    target_ds = deepcopy(pydicom.dcmread(target_path))
     max_roinumber = get_max_roinumber(target_ds)
     
     for source_path in source_paths:
@@ -190,5 +192,13 @@ def combine_multiple_rtstructs_with_full_update(source_paths, target_path):
                     target_ds.RTROIObservationsSequence.append(new_observation)
                     break
 
+    # generate a unique id for the new dicom 
+    target_ds.SOPInstanceUID = generate_uid()
+    # include/modify the series description 
+    combined_description = 'Target: '+str(target_path.name) +'. Sources: '+', '.join([str(source.name) for source in source_paths])
+    if "SeriesDescription" in target_ds:
+        target_ds.SeriesDescription += combined_description
+    else:
+        target_ds.SeriesDescription = combined_description
 
     return target_ds
