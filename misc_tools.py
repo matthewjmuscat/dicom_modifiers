@@ -18,3 +18,38 @@ def checkdirs(live_display, important_info, *paths):
             sys.exit('> Programme exited.')
         else:
             live_display.start()
+
+
+def find_single_true_key(d):
+    # Using list comprehension to filter keys with True values
+    keys_with_true_value = [key for key, value in d.items() if value is True]
+    
+    # Check if the list contains more than one element
+    if len(keys_with_true_value) > 1:
+        raise ValueError("More than one value is True.")
+    elif len(keys_with_true_value) == 0:
+        return None  # Or raise an error if a True value is mandatory
+    else:
+        return keys_with_true_value[0]
+    
+
+
+def create_sublists(original_list):
+    result_dict = {}
+    for i in original_list:
+        # Create a sublist excluding the current element
+        sublist = [x for x in original_list if x != i]
+        # Store the sublist and the excluded element as a pair
+        result_dict[str(i)] = [sublist, i]
+    return result_dict
+
+def create_combinations(original_list):
+    result_list = []
+    for i in original_list:
+        # Create a sublist excluding the current element
+        sublist = [x for x in original_list if x != i]
+        # Create a dictionary for the current combination
+        combination_dict = {"Sources": sublist, "Target": i}
+        # Add the dictionary to the result list
+        result_list.append(combination_dict)
+    return result_list

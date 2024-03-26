@@ -14,7 +14,8 @@ from rich.live import Live
 
 # Custom
 import misc_tools
-import dicom_modifer_functions
+import dicom_modifier_functions
+import processes_funcs
 
 ### IMPORT PACKAGES (END)
 
@@ -24,6 +25,13 @@ import dicom_modifer_functions
 
 def main():
     ### Define variables
+
+    ### What would you like to do?
+    ### Only one key can have a True value!
+    mod_dicoms_str = 'Modify dicoms'
+    combine_RTStructs_str = 'Combine RT structs'
+    process_to_run_dict = {mod_dicoms_str: False,
+                           combine_RTStructs_str: True}
 
     ### Define the dictionary that defines the dicom tags to change and what the new values should be
     ## IMPORTANT: For this below dict, make sure these are all tags that are part of the standard dicom library!
@@ -73,6 +81,13 @@ def main():
         task_main_indeterminate_completed = completed_progress.add_task('[green]Performing preliminaries...', total=None, visible = False)
         ######
 
+        ### Check what you want to accomplish:
+        try:
+            process_to_run = misc_tools.find_single_true_key(process_to_run_dict)
+            print(f"You indicated you want to: {process_to_run}")
+        except ValueError as e:
+            print(e)
+
 
         ### Create directories if not already present
         data_dir = pathlib.Path(__file__).parents[0].joinpath(data_folder_name)
@@ -113,53 +128,39 @@ def main():
         ### MODIFY DICOMS (START) ###
         ###
 
-        ### For loading bar (START)
-        # Define descriptions
-        patientUID_default = "Initializing"
-        processing_patients_main_description = "[red]Modifying DICOMs [{}]...".format(patientUID_default)
-        processing_patients_completed_main_description = "[green]Modifying DICOMs"
-        # Initialize tasks
-        processing_patients_task = patients_progress.add_task(processing_patients_main_description, total=num_dicoms)
-        processing_patients_task_completed = completed_progress.add_task(processing_patients_completed_main_description, total=num_dicoms, visible=False)
-        ### For loading bar (END)
-
-        for dicom_path in dicom_paths_list:
-            # Get DICOM file name
-            dicom_filename = dicom_path.name
-
-            ### For loading bar (START)
-            processing_patients_main_description = "[red]Modifying DICOMs [{}]...".format(dicom_filename)
-            patients_progress.update(processing_patients_task, description=processing_patients_main_description)
-            ### For loading bar (END)
-
-            # Modify the DICOM
-            modified_dicom = dicom_modifer_functions.modify_standard_DicomTag(dicom_path, 
-                    standard_tags_to_change_dict, 
-                    important_info, 
-                    live_display)
-            
-            # Get patient ID
-            patient_ID = modified_dicom[0x0010,0x0020].value
-            
-            # Save the DICOM to file
-            sp_session_sp_patient_output_dir = session_output_dir.joinpath(str(patient_ID))
-            sp_session_sp_patient_output_dir.mkdir(parents=False, exist_ok=True)
-            output_file_path = sp_session_sp_patient_output_dir.joinpath(dicom_filename)
-            modified_dicom.save_as(output_file_path)
-
-            del modified_dicom
-
-            # Advance loading bar
-            patients_progress.update(processing_patients_task, advance=1)
-            completed_progress.update(processing_patients_task_completed, advance=1)
-        
-        # Show/hide complete/incomplete loading bars
-        patients_progress.update(processing_patients_task, visible=False)
-        completed_progress.update(processing_patients_task_completed, visible=True)
+        if process_to_run == mod_dicoms_str:
+            processes_funcs.modify_dicoms(num_dicoms,
+                  patients_progress,
+                  completed_progress,
+                  dicom_paths_list,
+                  session_output_dir,
+                  standard_tags_to_change_dict,
+                  important_info,
+                  live_display
+                  )
 
 
         ###    
         ### MODIFY DICOMS (END) ###
+        ###
+            
+
+        ###
+        ### COMBINE DICOMS (START) ###
+        ###
+        if process_to_run == combine_RTStructs_str:  
+            processes_funcs.combine_structure_sets(num_dicoms,
+                  patients_progress,
+                  completed_progress,
+                  dicom_paths_list,
+                  session_output_dir,
+                  important_info,
+                  live_display
+                  )
+
+
+        ###        
+        ### COMBINE DICOMS (END) ### 
         ###
 
     # Exit programme
