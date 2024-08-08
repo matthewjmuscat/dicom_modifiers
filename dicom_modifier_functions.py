@@ -151,9 +151,12 @@ def combine_rtstructs_with_checks(source_path, target_path):
 
 
 
-def combine_multiple_rtstructs_with_full_update(source_paths, target_path, custom_instance_prefix = "1.2.3.4.5."):
+def combine_multiple_rtstructs_with_full_update(source_paths, target_path, structure_names_list, custom_instance_prefix = "1.2.3.4.5."):
     target_ds = deepcopy(pydicom.dcmread(target_path))
     max_roinumber = get_max_roinumber(target_ds)
+
+    # Convert structure names list to lowercase
+    structure_names_list = [name.lower() for name in structure_names_list]
     
     for source_path in source_paths:
         source_ds = pydicom.dcmread(source_path)
@@ -164,34 +167,36 @@ def combine_multiple_rtstructs_with_full_update(source_paths, target_path, custo
             raise ValueError(f"The DICOM files cannot be combined due to the following mismatches: {message}")
         
         for source_structure in source_ds.StructureSetROISequence:
-            new_roi_number = max_roinumber + 1
-            max_roinumber += 1
-            
-            # Copy and update the ROI in StructureSetROISequence
-            new_structure = deepcopy(source_structure)
-            new_structure.ROINumber = new_roi_number
-            target_ds.StructureSetROISequence.append(new_structure)
-            
-            # Process the corresponding contour in ROIContourSequence
-            for source_roi in source_ds.ROIContourSequence:
-                if source_roi.ReferencedROINumber == source_structure.ROINumber:
-                    new_roi = deepcopy(source_roi)
-                    new_roi.ReferencedROINumber = new_roi_number
-                    if "ROIContourSequence" not in target_ds:
-                        target_ds.ROIContourSequence = Sequence()
-                    target_ds.ROIContourSequence.append(new_roi)
-                    break
-            
-            # Process the corresponding observation in RTROIObservationsSequence
-            for source_observation in source_ds.RTROIObservationsSequence:
-                if source_observation.ReferencedROINumber == source_structure.ROINumber:
-                    new_observation = deepcopy(source_observation)
-                    new_observation.ObservationNumber = new_roi_number
-                    new_observation.ReferencedROINumber = new_roi_number
-                    if "RTROIObservationsSequence" not in target_ds:
-                        target_ds.RTROIObservationsSequence = Sequence()
-                    target_ds.RTROIObservationsSequence.append(new_observation)
-                    break
+            structure_name = source_structure.ROIName.lower()  # Convert structure name to lowercase
+            if not structure_names_list or any(name in structure_name for name in structure_names_list):
+                new_roi_number = max_roinumber + 1
+                max_roinumber += 1
+                
+                # Copy and update the ROI in StructureSetROISequence
+                new_structure = deepcopy(source_structure)
+                new_structure.ROINumber = new_roi_number
+                target_ds.StructureSetROISequence.append(new_structure)
+                
+                # Process the corresponding contour in ROIContourSequence
+                for source_roi in source_ds.ROIContourSequence:
+                    if source_roi.ReferencedROINumber == source_structure.ROINumber:
+                        new_roi = deepcopy(source_roi)
+                        new_roi.ReferencedROINumber = new_roi_number
+                        if "ROIContourSequence" not in target_ds:
+                            target_ds.ROIContourSequence = Sequence()
+                        target_ds.ROIContourSequence.append(new_roi)
+                        break
+                
+                # Process the corresponding observation in RTROIObservationsSequence
+                for source_observation in source_ds.RTROIObservationsSequence:
+                    if source_observation.ReferencedROINumber == source_structure.ROINumber:
+                        new_observation = deepcopy(source_observation)
+                        new_observation.ObservationNumber = new_roi_number
+                        new_observation.ReferencedROINumber = new_roi_number
+                        if "RTROIObservationsSequence" not in target_ds:
+                            target_ds.RTROIObservationsSequence = Sequence()
+                        target_ds.RTROIObservationsSequence.append(new_observation)
+                        break
     
     
     ###
