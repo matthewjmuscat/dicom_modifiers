@@ -151,12 +151,21 @@ def combine_rtstructs_with_checks(source_path, target_path):
 
 
 
-def combine_multiple_rtstructs_with_full_update(source_paths, target_path, structure_names_list, custom_instance_prefix = "1.2.3.4.5."):
+def combine_multiple_rtstructs_with_full_update(source_paths, 
+                                                target_path, 
+                                                structure_names_list,
+                                                transfer_structure_if_already_exists_in_target = True, 
+                                                custom_instance_prefix = "1.2.3.4.5."):
     target_ds = deepcopy(pydicom.dcmread(target_path))
     max_roinumber = get_max_roinumber(target_ds)
 
     # Convert structure names list to lowercase
     structure_names_list = [name.lower() for name in structure_names_list]
+
+    # Create a set of existing structure names in the target, converted to lowercase
+    existing_target_structures = set(
+        structure.ROIName.lower() for structure in target_ds.StructureSetROISequence
+    )
     
     for source_path in source_paths:
         source_ds = pydicom.dcmread(source_path)
@@ -168,7 +177,17 @@ def combine_multiple_rtstructs_with_full_update(source_paths, target_path, struc
         
         for source_structure in source_ds.StructureSetROISequence:
             structure_name = source_structure.ROIName.lower()  # Convert structure name to lowercase
+
+            # Check if the structure is in the list of structures to transfer
             if not structure_names_list or any(name in structure_name for name in structure_names_list):
+                
+                # If transfer_structure_if_already_exists_in_target is False, check if a similar structure exists in the target
+                if not transfer_structure_if_already_exists_in_target:
+                    # Find if any of the desired structures already exist in the target
+                    if any(name in structure_name and name in existing_structure for name in structure_names_list for existing_structure in existing_target_structures):
+                        continue  # Skip transferring this specific structure if a similarly named one exists in the target
+
+
                 new_roi_number = max_roinumber + 1
                 max_roinumber += 1
                 

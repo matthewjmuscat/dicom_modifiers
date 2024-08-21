@@ -38,14 +38,15 @@ def main():
     ## IMPORTANT: For this below dict, make sure these are all tags that are part of the standard dicom library!
     ## IMPORTANT: Make sure that the new value to be set is of the correct datatype! - Example: SeriesDescription has value representation LO, therefore new value must be string!
     # Can use either tuple of literal hexidecimals or tag keyword as string - Example: 'SeriesDescription' or  
-    standard_tags_to_change_dict = {(0x0008,0x103E): 'PELVIS',
+    standard_tags_to_change_dict = {(0x0008,0x103E): 'PROSTATE',
                                 }
 
     ### IF combine_RTStructs_str == True
     ### Provide a list of strings of the structures (or an empty list for ALL structures) you wish to be transferred
     # Note that the list is NOT case sensitive, when the programme makes the comparison it converts all characters to lower case 
     # for both vars being compared.
-    structures_to_be_transferred_list = ['bladder']
+    structures_to_be_transferred_list = ['bladder', 'rectum', 'bowel', 'urethra']
+    transfer_structure_if_already_exists_in_target_bool = True
 
     ### Timing vars
     algo_global_start = time.time()
@@ -162,6 +163,7 @@ def main():
                   dicom_paths_list,
                   session_output_dir,
                   structures_to_be_transferred_list,
+                  transfer_structure_if_already_exists_in_target_bool,
                   important_info,
                   live_display
                   )
