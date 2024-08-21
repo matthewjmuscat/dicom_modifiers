@@ -64,6 +64,7 @@ def combine_structure_sets(num_dicoms,
                   dicom_paths_list,
                   session_output_dir,
                   structure_names_list,
+                  transfer_structure_if_already_exists_in_target_bool,
                   important_info,
                   live_display
                   ):
@@ -127,7 +128,10 @@ def combine_structure_sets(num_dicoms,
             list_of_sources_paths = source_target_dictionary['Sources']
             target_path = source_target_dictionary['Target']
         
-            combined_dicom = dicom_modifier_functions.combine_multiple_rtstructs_with_full_update(list_of_sources_paths, target_path, structure_names_list)
+            combined_dicom = dicom_modifier_functions.combine_multiple_rtstructs_with_full_update(list_of_sources_paths, 
+                                                                                                  target_path, 
+                                                                                                  structure_names_list,
+                                                                                                  transfer_structure_if_already_exists_in_target = transfer_structure_if_already_exists_in_target_bool)
 
 
             # Get DICOM file name
